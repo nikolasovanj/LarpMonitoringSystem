@@ -1,0 +1,23 @@
+services:
+  mosquitto:
+    image: eclipse-mosquitto:2
+    ports: ["1883:1883"]
+    volumes:
+      - ./infrastructure/mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+
+  sim-pump01:
+    build: ./simulators
+    environment:
+      DEVICE_ID: pump01
+      BROKER_HOST: mosquitto      # the service name, not localhost
+      PUBLISH_INTERVAL_MS: 1000
+    depends_on: [mosquitto]
+
+  sim-motor02:
+    build: ./simulators
+    environment:
+      DEVICE_ID: motor02
+      LINE: line2
+      BROKER_HOST: mosquitto
+      PUBLISH_INTERVAL_MS: 250
+    depends_on: [mosquitto]
