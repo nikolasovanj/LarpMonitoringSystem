@@ -8,6 +8,9 @@ typedef struct {
     char broker_host[128];
     int  broker_port;
     int  publish_interval_ms;
+    double fault_probability;
+    unsigned long long seed;
+    char sensors[128];
 } config_t;
 
 /* Returns 0 on success, -1 on invalid config (error already printed). */

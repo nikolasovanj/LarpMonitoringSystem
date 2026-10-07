@@ -25,6 +25,21 @@ static int env_int(const char *name, int def, int min, int max, int *out) {
     return 0;
 }
 
+static int env_double(const char *name, double def, double min, double max, double *out){
+    const char *v = getenv(name);
+    if (!v || !*v) { *out = def; return 0;}
+
+    char *end;
+    errno = 0;
+    double d = strtod(v, &end);
+    if (errno || *end != '\0' || d < min || d > max){
+        fprintf(stderr, "config: %s=\"%s\" invalid (expected %g..%g)\n", name, v, min, max);
+        return -1;
+    }
+    *out = d;
+    return 0;
+}
+
 /* Topic segments and JSON strings stay safe if we only allow [A-Za-z0-9_-] */
 static int valid_id(const char *name, const char *s) {
     if (!*s) { fprintf(stderr, "config: %s is empty\n", name); return 0; }
@@ -49,6 +64,7 @@ int config_load(config_t *cfg) {
     env_str("SITE",      "site1", cfg->site, sizeof cfg->site);
     env_str("LINE",      "line1", cfg->line, sizeof cfg->line);
     env_str("BROKER_HOST", "localhost", cfg->broker_host, sizeof cfg->broker_host);
+    env_str("SENSORS", "temperature,vibration,pressure", cfg->sensors, sizeof cfg->sensors);
 
     if (!valid_id("DEVICE_ID", cfg->device_id) ||
         !valid_id("SITE", cfg->site) ||
@@ -56,8 +72,21 @@ int config_load(config_t *cfg) {
         return -1;
 
     if (env_int("BROKER_PORT", 1883, 1, 65535, &cfg->broker_port) ||
-        env_int("PUBLISH_INTERVAL_MS", 1000, 10, 3600000, &cfg->publish_interval_ms))
+        env_int("PUBLISH_INTERVAL_MS", 1000, 10, 3600000, &cfg->publish_interval_ms) ||
+        env_double("FAULT_PROBABILITY", 0.0, 0.0, 1.0, &cfg->fault_probability))
         return -1;
+
+    cfg->seed = 0;
+    const char *sd = getenv("SEED");
+    if(sd && *sd){
+        char *end;
+        errno = 0;
+        cfg->seed = strtoull(sd, &end, 10);
+        if(errno || *end != '\0'){
+            fprintf(stderr, "config: SEED=\"%s\" invalid\n", sd);
+            return -1;
+        }
+    }
 
     return 0;
 }
