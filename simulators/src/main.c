@@ -7,10 +7,20 @@
 #include <errno.h>
 #include <time.h>
 #include <signal.h>
+#include <cjson/cJSON.h>
+#include "cmd.h"
 #include "config.h"
 #include "sensor.h"
 
+
 #define MAX_SENSORS 16
+
+typedef struct {
+    const char *cmd_topic;
+    const char *result_topic;
+    sensor_t   *sensors;
+    size_t      n;
+} app_ctx_t;
 
 static atomic_bool connected = false;
 static volatile sig_atomic_t stop_requested = 0;
@@ -31,11 +41,13 @@ static void install_signal_handlers(void) {
 }
 
 static void on_connect(struct mosquitto *m, void *ud, int rc) {
+    app_ctx_t *ctx = ud;
     printf("connect: %s\n", mosquitto_connack_string(rc));
     fflush(stdout);
     if (rc == 0) {
         // retained "online" so late subscribers see current state
         mosquitto_publish(m, NULL, status_topic, 6, "online", 1, true);
+        mosquitto_subscribe(m, NULL, ctx->cmd_topic, 1);
         atomic_store(&connected, true);
     }
 }
@@ -44,6 +56,36 @@ static void on_disconnect(struct mosquitto *m, void *ud, int rc) {
     atomic_store(&connected, false);
     printf("disconnected (rc=%d)%s\n", rc, rc ? ", will auto-reconnect" : "");
     fflush(stdout);
+}
+
+/* Runs on libmosquitto's network thread. sensor_inject is atomic, so no locks needed. */
+static void on_message(struct mosquitto *m, void *ud, const struct mosquitto_message *msg) {
+    app_ctx_t *ctx = ud;
+    if (strcmp(msg->topic, ctx->cmd_topic) != 0) return;
+
+    /* A retained command would replay on every reconnect: ignore it. */
+    if (msg->retain) {
+        fprintf(stderr, "ignoring retained command\n");
+        return;
+    }
+
+    char err[256] = "";
+    int rc = cmd_apply(msg->payload, (size_t)msg->payloadlen, ctx->sensors, ctx->n, err, sizeof err);
+    printf("cmd %s: %.*s%s%s\n", rc == 0 ? "accepted" : "rejected",
+           msg->payloadlen > 200 ? 200 : msg->payloadlen, (const char *)msg->payload,
+           rc ? " -> " : "", err);
+    fflush(stdout);
+
+    /* cJSON escapes the strings for us, so odd input can't break the reply. */
+    cJSON *reply = cJSON_CreateObject();
+    cJSON_AddBoolToObject(reply, "ok", rc == 0);
+    if (rc) cJSON_AddStringToObject(reply, "error", err);
+    char *text = cJSON_PrintUnformatted(reply);
+    if (text) {
+        mosquitto_publish(m, NULL, ctx->result_topic, (int)strlen(text), text, 1, false);
+        free(text);
+    }
+    cJSON_Delete(reply);
 }
 
 static void sleep_ms(int ms) {
@@ -83,13 +125,19 @@ int main(void) {
 
     install_signal_handlers();
 
+    char cmd_topic[256], result_topic[256];
+    snprintf(cmd_topic, sizeof cmd_topic, "factory/%s/%s/%s/cmd", cfg.site, cfg.line, cfg.device_id);
+    snprintf(result_topic, sizeof result_topic, "%s/result", cmd_topic);
+
+    app_ctx_t ctx = { cmd_topic, result_topic, sensors, nsensors };
     mosquitto_lib_init();
 
     // unique client ID per device: two clients with the same ID kick each other off
-    struct mosquitto *m = mosquitto_new(client_id, true, NULL);
+    struct mosquitto *m = mosquitto_new(client_id, true, &ctx);
     if (!m) { fprintf(stderr, "mosquitto_new failed\n"); return 1; }
 
     mosquitto_connect_callback_set(m, on_connect);
+    mosquitto_message_callback_set(m, on_message);
     mosquitto_disconnect_callback_set(m, on_disconnect);
     // Last Will: broker publishes this if we vanish without a clean disconnect
     mosquitto_will_set(m, status_topic, 7, "offline", 1, true);
