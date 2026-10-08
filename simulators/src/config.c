@@ -3,6 +3,7 @@
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 static void env_str(const char *name, const char *def, char *out, size_t outsz) {
     const char *v = getenv(name);
@@ -32,7 +33,7 @@ static int env_double(const char *name, double def, double min, double max, doub
     char *end;
     errno = 0;
     double d = strtod(v, &end);
-    if (errno || *end != '\0' || d < min || d > max){
+    if (errno || *end != '\0' || !(d >= min && d <= max)){
         fprintf(stderr, "config: %s=\"%s\" invalid (expected %g..%g)\n", name, v, min, max);
         return -1;
     }
@@ -82,7 +83,7 @@ int config_load(config_t *cfg) {
         char *end;
         errno = 0;
         cfg->seed = strtoull(sd, &end, 10);
-        if(errno || *end != '\0'){
+        if(errno || *end != '\0' || strchr(sd, '-')) {
             fprintf(stderr, "config: SEED=\"%s\" invalid\n", sd);
             return -1;
         }

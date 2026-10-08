@@ -53,6 +53,7 @@ static void on_connect(struct mosquitto *m, void *ud, int rc) {
 }
 
 static void on_disconnect(struct mosquitto *m, void *ud, int rc) {
+    (void)m; (void)ud;
     atomic_store(&connected, false);
     printf("disconnected (rc=%d)%s\n", rc, rc ? ", will auto-reconnect" : "");
     fflush(stdout);
@@ -60,6 +61,7 @@ static void on_disconnect(struct mosquitto *m, void *ud, int rc) {
 
 /* Runs on libmosquitto's network thread. sensor_inject is atomic, so no locks needed. */
 static void on_message(struct mosquitto *m, void *ud, const struct mosquitto_message *msg) {
+    if (msg->payloadlen == 0) return;      /* retained-message clear, not a command */
     app_ctx_t *ctx = ud;
     if (strcmp(msg->topic, ctx->cmd_topic) != 0) return;
 
@@ -125,9 +127,15 @@ int main(void) {
 
     install_signal_handlers();
 
-    char cmd_topic[256], result_topic[256];
-    snprintf(cmd_topic, sizeof cmd_topic, "factory/%s/%s/%s/cmd", cfg.site, cfg.line, cfg.device_id);
-    snprintf(result_topic, sizeof result_topic, "%s/result", cmd_topic);
+    char cmd_topic[256], result_topic[264];
+    int n1 = snprintf(cmd_topic, sizeof cmd_topic, "factory/%s/%s/%s/cmd", cfg.site, cfg.line, cfg.device_id);
+    int n2 = snprintf(result_topic, sizeof result_topic, "%s/result", cmd_topic);
+
+    if(n1 < 0 || (size_t)n1 >= sizeof cmd_topic ||
+       n2 < 0 || (size_t)n2 >= sizeof result_topic) {
+        fprintf(stderr, "topic too long\n");
+        return 1;
+       }
 
     app_ctx_t ctx = { cmd_topic, result_topic, sensors, nsensors };
     mosquitto_lib_init();
@@ -176,6 +184,8 @@ int main(void) {
                 "{\"device\":\"%s\",\"sensor\":\"%s\",\"value\":%.3f,\"unit\":\"%s\",\"ts\":%ld}",
                 cfg.device_id, profiles[i]->name, s.value, profiles[i]->unit, (long)time(NULL));
 
+            if (n < 0 || (size_t)n >= sizeof payload) { fprintf(stderr, "payload truncated\n"); continue; }
+
             int rc = mosquitto_publish(m, NULL, topics[i], n, payload, 1, false);
             if (rc != MOSQ_ERR_SUCCESS)
                 fprintf(stderr, "publish failed: %s\n", mosquitto_strerror(rc));
@@ -184,7 +194,7 @@ int main(void) {
     }
 
     // graceful shutdown
-    printf("shutting down\n");
+    printf("shutting down...\n");
     bool was_connected = atomic_load(&connected);
 
     if(was_connected){

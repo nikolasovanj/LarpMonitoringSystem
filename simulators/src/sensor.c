@@ -151,7 +151,7 @@ void sensor_init(sensor_t *s, const sensor_profile_t *p, const char *device_id,
     atomic_init(&s->pending, 0);
 
     /* Mix in the sensor name so a device's three sensors don't share a noise sequence. */
-    uint64_t seed = (seed_override ? seed_override : fnv1a(device_id)) ^ fnv1a(p->name);
+    uint64_t seed = (seed_override ^ fnv1a(device_id)) ^ fnv1a(p->name);
     s->rng = splitmix64(seed);
     if (s->rng == 0) s->rng = 0x9E3779B97F4A7C15ULL;   /* xorshift must not be all zero */
 }

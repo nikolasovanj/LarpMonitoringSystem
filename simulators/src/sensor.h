@@ -51,7 +51,7 @@ typedef struct {
     int remaining;
     double spike_sign;
     double fault_probability;   /* chance per sample of a random fault starting */
-    atomic_uint pending;        /* manual injection mailbox, safe to write from another thread */
+    unsigned int pending;        /* manual injection mailbox, safe to write from another thread */
 } sensor_t;
 
 /* Parses "temperature, pressure" into profile pointers.

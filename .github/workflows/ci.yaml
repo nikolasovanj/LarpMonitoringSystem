@@ -1,0 +1,73 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+    paths: ["simulators/**", "docker-compose.yml", "infrastructure/**", ".github/workflows/ci.yml"]
+  pull_request:
+    paths: ["simulators/**", "docker-compose.yml", "infrastructure/**", ".github/workflows/ci.yml"]
+
+permissions:
+  contents: read
+
+concurrency:                       # a new push cancels the older run of the same branch
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DEPS: build-essential cmake libmosquitto-dev libcjson-dev
+
+jobs:
+  unit-asan:
+    name: Unit tests (ASan + UBSan)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt-get update && sudo apt-get install -y $DEPS
+      # Large ASLR entropy breaks sanitizer shadow-memory mapping on some runner kernels.
+      - run: sudo sysctl vm.mmap_rnd_bits=28
+      - name: Configure
+        run: >
+          cmake -S simulators -B build -DBUILD_TESTS=ON -DCMAKE_BUILD_TYPE=Debug
+          -DCMAKE_C_FLAGS="-Wall -Wextra -Werror -fsanitize=address,undefined -fno-omit-frame-pointer"
+      - run: cmake --build build -j
+      - run: ctest --test-dir build --output-on-failure -E inject_race
+
+  unit-tsan:
+    name: Race test (ThreadSanitizer)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt-get update && sudo apt-get install -y $DEPS
+      - run: sudo sysctl vm.mmap_rnd_bits=28
+      - name: Configure
+        run: >
+          cmake -S simulators -B build -DBUILD_TESTS=ON -DCMAKE_BUILD_TYPE=Debug
+          -DCMAKE_C_FLAGS="-Wall -Wextra -Werror -fsanitize=thread"
+      - run: cmake --build build -j
+      - run: ctest --test-dir build --output-on-failure -R inject_race
+
+  integration:
+    name: Integration (real broker + Docker image)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt-get update && sudo apt-get install -y $DEPS mosquitto-clients jq
+      - name: Build simulator (Release, as shipped)
+        run: >
+          cmake -S simulators -B simulators/build -DCMAKE_BUILD_TYPE=Release
+          -DCMAKE_C_FLAGS="-Wall -Wextra -Werror"
+          && cmake --build simulators/build -j
+      - run: bash simulators/tests/integration.sh
+
+  compose:
+    name: Compose file and images
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker compose config --quiet
+      - run: docker compose build
