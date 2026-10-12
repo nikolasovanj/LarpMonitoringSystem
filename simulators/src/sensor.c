@@ -4,14 +4,17 @@
 #include <ctype.h>
 #include <stdio.h>
 
-/*                                           name           unit    base   min  max   noise  theta  dsigma ramp    spike */
-const sensor_profile_t SENSOR_TEMPERATURE = {"temperature", "C",     70.0, 0.0, 150.0, 0.15, 0.02, 0.08,  0.25,  25.0};
-const sensor_profile_t SENSOR_VIBRATION   = {"vibration",   "mm/s",   2.5, 0.0,  25.0, 0.08, 0.05, 0.03,  0.05,   8.0};
-const sensor_profile_t SENSOR_PRESSURE    = {"pressure",    "bar",    6.0, 0.0,  12.0, 0.03, 0.03, 0.02, -0.02,   2.5};
+/*                                           name           unit       base   min  max   noise  theta  dsigma ramp    spike */
+const sensor_profile_t SENSOR_TEMPERATURE = {"temperature", "C",       70.0,  0.0, 150.0, 0.15, 0.02, 0.08,  0.25,  25.0};
+const sensor_profile_t SENSOR_VIBRATION   = {"vibration",   "mm/s",     2.5,  0.0,  25.0, 0.08, 0.05, 0.03,  0.05,   8.0};
+const sensor_profile_t SENSOR_PRESSURE    = {"pressure",    "bar",      6.0,  0.0,  12.0, 0.03, 0.03, 0.02, -0.02,   2.5};
+const sensor_profile_t SENSOR_FLOW        = {"flow",        "L/min",   40.0,  0.0, 100.0, 0.40, 0.03, 0.12, -0.12,  15.0}; // ramp = clogging filter 
+const sensor_profile_t SENSOR_CURRENT     = {"current",     "A",       12.0,  0.0,  40.0, 0.15, 0.04, 0.05,  0.05,   6.0}; // ramp = rising load / bearing wear 
+const sensor_profile_t SENSOR_ULTRASONIC  = {"ultrasonic",  "mm",     500.0, 20.0,1200.0, 1.00, 0.01, 0.30,  1.00, 150.0}; // ramp = level falling (distance grows)
 
 /* To add a new sensor type: define a profile above and list it here. */
 static const sensor_profile_t *const REGISTRY[] = {
-    &SENSOR_TEMPERATURE, &SENSOR_VIBRATION, &SENSOR_PRESSURE
+    &SENSOR_TEMPERATURE, &SENSOR_VIBRATION, &SENSOR_PRESSURE, &SENSOR_FLOW, &SENSOR_CURRENT, &SENSOR_ULTRASONIC
 };
 #define REGISTRY_N (sizeof REGISTRY / sizeof REGISTRY[0])
 

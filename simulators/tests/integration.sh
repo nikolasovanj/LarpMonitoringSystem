@@ -154,7 +154,8 @@ test_telemetry() {
     check "$s: valid JSON, right device/sensor, number value, fresh ts" \
       jqt "$msg" --arg d $dev --arg s $s \
          '.device==$d and .sensor==$s and (.value|type=="number")
-          and (.unit|type=="string") and (((.ts - now)|fabs) < 30)'
+          and (.unit|type=="string") 
+          and .ts > 100000000000 and (((.ts/1000 - now)|fabs) < 30)'
   done
 }
 
@@ -211,7 +212,7 @@ test_cmd_accept() {
   start_sim $dev SENSORS=temperature,pressure
   wait_status $dev online 10 || bad "device did not come online"
   reply=$(send_cmd $dev '{"sensor":"pressure","fault":"ramp","duration":15}')
-  check "reply is {\"ok\":true}" jqt "$reply"  '.ok==true'
+  check "reply is {\"success\":true}" jqt "$reply"  '.success==true'
   check "pressure enters the ramp fault" wait_log "$log" "$dev/pressure: fault none -> ramp" 5
   check "the fault ends after its duration" wait_log "$log" "$dev/pressure: fault ramp -> none" 10
   check "temperature was not affected" not grep -qF "$dev/temperature: fault" "$log"
@@ -233,7 +234,7 @@ test_cmd_reject() {
     json=${c%%|*}; frag=${c#*|}
     reply=$(send_cmd $dev "$json")
     check "rejected with a reason: $json" \
-      jqt "$reply"  --arg f "$frag" '.ok==false and (.error|contains($f))'
+      jqt "$reply"  --arg f "$frag" '.success==false and (.error|contains($f))'
   done
   check "no rejected command injected a fault" not grep -qF 'fault none ->' "$log"
 }
@@ -263,7 +264,7 @@ test_broker_restart() {
   check "reconnected (>= 2 CONNACKs in the log)" \
     [ "$(grep -c '^connect: Connection Accepted' "$log")" -ge 2 ]
   reply=$(send_cmd $dev '{"sensor":"pressure","fault":"spike"}')
-  check "cmd subscription was restored" jqt "$reply" '.ok==true'
+  check "cmd subscription was restored" jqt "$reply" '.success==true'
 }
 
 test_image_sigterm() {
@@ -286,10 +287,21 @@ test_image_sigterm() {
   check "status flips to offline" wait_status $dev offline 5
 }
 
+test_timestamps() {
+  local dev=t12-ts f="$TMP/t12.cap" total uniq
+  start_sim $dev SENSORS=temperature        # 200 ms interval
+  wait_status $dev online 10 || bad "device did not come online"
+  capture 3 "$(T $dev temperature/telemetry)" "$f"
+  total=$(wc -l <"$f")
+  uniq=$(cut -d' ' -f2- "$f" | jq -r .ts | sort -u | wc -l)
+  check "got a useful number of samples ($total in 3 s)" [ "$total" -ge 10 ]
+  eq "every sample has its own timestamp" "$uniq" "$total"
+}
+
 # ---------------------------------------------------------------- main
 
 ALL=(status telemetry subset two_devices clean_stop last_will
-     cmd_accept cmd_reject retained_cmd broker_restart image_sigterm)
+     cmd_accept cmd_reject retained_cmd broker_restart image_sigterm timestamps)
 SELECTED=("$@"); [ ${#SELECTED[@]} -eq 0 ] && SELECTED=("${ALL[@]}")
 
 echo "broker: eclipse-mosquitto:2 on 127.0.0.1:$PORT    sim: $SIM"

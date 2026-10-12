@@ -9,7 +9,7 @@ static int checks = 0, failures = 0;
     fprintf(stderr, "  FAIL line %d: %s\n", __LINE__, #cond); } } while (0)
 
 static const sensor_profile_t *const ALL[] = {
-    &SENSOR_TEMPERATURE, &SENSOR_VIBRATION, &SENSOR_PRESSURE
+    &SENSOR_TEMPERATURE, &SENSOR_VIBRATION, &SENSOR_PRESSURE, &SENSOR_FLOW, &SENSOR_CURRENT, &SENSOR_ULTRASONIC
 };
 #define NALL (sizeof ALL / sizeof ALL[0])
 
