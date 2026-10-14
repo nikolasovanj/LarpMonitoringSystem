@@ -7,9 +7,13 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{6C1566D8-FBF
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Monitor.Core", "src\Monitor.Core\Monitor.Core.csproj", "{15DF8C0A-0992-42EC-BA0C-EA7E05B0FCE0}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Monitor.Core.Tests", "src\Monitor.Core.Tests\Monitor.Core.Tests.csproj", "{705E4A9C-B750-4EA4-A366-CAC5D3A56F90}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Monitor.Core.Tests", "tests\Monitor.Core.Tests\Monitor.Core.Tests.csproj", "{705E4A9C-B750-4EA4-A366-CAC5D3A56F90}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Monitor.Ingestion", "src\Monitor.Ingestion\Monitor.Ingestion.csproj", "{2A9A954B-BFD1-4809-8A00-04FE4E2B78C2}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{36698692-4DFC-4E43-A29B-4E244D47CB74}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Monitor.Ingestion.Tests", "tests\Monitor.Ingestion.Tests\Monitor.Ingestion.Tests.csproj", "{0A1D2E36-E148-4CD4-AC93-50CA9DE5522B}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -32,10 +36,15 @@ Global
 		{2A9A954B-BFD1-4809-8A00-04FE4E2B78C2}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2A9A954B-BFD1-4809-8A00-04FE4E2B78C2}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{2A9A954B-BFD1-4809-8A00-04FE4E2B78C2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0A1D2E36-E148-4CD4-AC93-50CA9DE5522B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0A1D2E36-E148-4CD4-AC93-50CA9DE5522B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0A1D2E36-E148-4CD4-AC93-50CA9DE5522B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0A1D2E36-E148-4CD4-AC93-50CA9DE5522B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{15DF8C0A-0992-42EC-BA0C-EA7E05B0FCE0} = {6C1566D8-FBF1-4F63-A0B1-4B08AED4833C}
 		{705E4A9C-B750-4EA4-A366-CAC5D3A56F90} = {6C1566D8-FBF1-4F63-A0B1-4B08AED4833C}
 		{2A9A954B-BFD1-4809-8A00-04FE4E2B78C2} = {6C1566D8-FBF1-4F63-A0B1-4B08AED4833C}
+		{0A1D2E36-E148-4CD4-AC93-50CA9DE5522B} = {36698692-4DFC-4E43-A29B-4E244D47CB74}
 	EndGlobalSection
 EndGlobal

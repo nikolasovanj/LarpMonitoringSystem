@@ -9,7 +9,6 @@ public static class TelemetryPayload
     private static readonly JsonDocumentOptions Options = new() { MaxDepth = 8 };
 
     /// {"device":"..","sensor":"..","value":70.1,"unit":"C","ts":1759750000}
-    /// ts may be seconds or milliseconds; missing ts falls back to `now`.
     public static bool TryParse(ReadOnlyMemory<byte> payload, DateTimeOffset now,
                                 out TelemetryReading reading, out string error)
     {
