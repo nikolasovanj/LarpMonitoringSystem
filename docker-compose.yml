@@ -70,6 +70,22 @@ services:
         condition: service_healthy
       timescaledb:
         condition: service_healthy
+
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.api
+    restart: unless-stopped
+    ports: ["8080:8080"]
+    environment:
+      Mqtt__Host: mosquitto
+      ConnectionStrings__Timescale: "Host=timescaledb;Port=5432;Database=iot;Username=iot;Password=${DB_PASSWORD:-iot_dev_password}"
+      Cors__Origins__0: "http://localhost:5173"
+    depends_on:
+      mosquitto:
+        condition: service_healthy
+      timescaledb:
+        condition: service_healthy
 volumes:
   mosquitto-data:
   tsdb-data:
