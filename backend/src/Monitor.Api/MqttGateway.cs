@@ -14,7 +14,7 @@ public sealed class MqttGateway(IOptions<MqttSettings> options, LiveBroadcaster 
 {
     private static readonly JsonSerializerOptions Json = new()
         { DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull };
-
+    private static readonly JsonSerializerOptions Web = new(JsonSerializerDefaults.Web);
     private IMqttClient? _client;
     public bool IsConnected => _client?.IsConnected == true;
 
@@ -51,6 +51,7 @@ public sealed class MqttGateway(IOptions<MqttSettings> options, LiveBroadcaster 
             .WithTopicFilter(f => f.WithTopic("factory/+/+/+/+/telemetry").WithAtMostOnceQoS())
             .WithTopicFilter(f => f.WithTopic("factory/+/+/+/status").WithAtLeastOnceQoS())
             .WithTopicFilter(f => f.WithTopic("factory/+/+/+/cmd/result").WithAtLeastOnceQoS())
+            .WithTopicFilter(f => f.WithTopic("alerts/+").WithAtLeastOnceQoS())
             .Build();
 
         var delay = TimeSpan.FromSeconds(1);
@@ -113,6 +114,14 @@ public sealed class MqttGateway(IOptions<MqttSettings> options, LiveBroadcaster 
             }
 
             // factory/{site}/{line}/{device}/cmd/result  (TopicParser deliberately rejects it)
+            if (msg.Topic is "alerts/opened" or "alerts/resolved" && payload.Length is > 0 and <= 4096)
+            {
+                var ev = JsonSerializer.Deserialize<AlertEvent>(payload, Web);
+                if (ev is null) return;
+                var message = ev.Message.Length > 300 ? ev.Message[..300] : ev.Message;
+                await hub.Clients.All.Alert(ev with { Type = msg.Topic["alerts/".Length..], Message = message });
+                return;
+            }
             var seg = msg.Topic.Split('/');
             if (seg is ["factory", var site, var line, var device, "cmd", "result"] && payload.Length is > 0 and <= 2048)
             {

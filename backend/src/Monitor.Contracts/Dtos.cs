@@ -35,3 +35,7 @@ public sealed record DeviceStatusChanged(string Site, string Line, string Device
 
 public sealed record CommandResultDto(string Site, string Line, string Device,
                                       bool Ok, string? Error, DateTimeOffset Time);
+
+/// type: "opened" | "resolved"
+public sealed record AlertEvent(string Type, long AlertId, string Severity, string Message,
+    string? Site, string? Line, string? Device, string? Sensor, double? Value, DateTimeOffset Time);                                    

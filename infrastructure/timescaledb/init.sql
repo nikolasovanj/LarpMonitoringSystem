@@ -94,6 +94,20 @@ CREATE TABLE alert_rules (
     enabled     boolean NOT NULL DEFAULT true
 );
 
+ALTER TABLE alert_rules ADD CONSTRAINT alert_rules_kind_fields CHECK (
+    (kind = 'threshold' AND operator IS NOT NULL AND threshold IS NOT NULL) OR
+    (kind = 'zscore'    AND threshold IS NOT NULL AND threshold > 0) OR
+    (kind = 'stale'     AND for_seconds > 0)
+);
+
+-- sensor = '*' matches every sensor. Thresholds are set from the simulator profiles.
+INSERT INTO alert_rules (name, sensor, kind, operator, threshold, for_seconds, severity) VALUES
+  ('High temperature',    'temperature', 'threshold', '>',  80,  3,  'critical'),
+  ('Low pressure',        'pressure',    'threshold', '<',  5.2, 2,  'warning'),
+  ('High vibration',      'vibration',   'threshold', '>',  4,   3,  'warning'),
+  ('Statistical anomaly', '*',           'zscore',    NULL, 5,   0,  'info'),
+  ('Sensor silent',       '*',           'stale',     NULL, NULL, 30, 'warning');
+
 CREATE TABLE alerts (
     id               bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     rule_id          integer REFERENCES alert_rules(id) ON DELETE SET NULL,
