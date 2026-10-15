@@ -44,8 +44,7 @@ public sealed class ApiFixture : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        _mosquitto = new ContainerBuilder()
-            .WithImage("eclipse-mosquitto:2")
+        _mosquitto = new ContainerBuilder("eclipse-mosquitto:2")
             .WithPortBinding(1883, true)
             .WithResourceMapping(
                 Encoding.UTF8.GetBytes("listener 1883\nallow_anonymous true\n"),
@@ -53,8 +52,7 @@ public sealed class ApiFixture : IAsyncLifetime
             .WithWaitStrategy(Wait.ForUnixContainer().UntilMessageIsLogged("running"))
             .Build();
 
-        _pg = new PostgreSqlBuilder()
-            .WithImage("timescale/timescaledb:latest-pg16")   // pin a version once it works
+        _pg = new PostgreSqlBuilder("timescale/timescaledb:latest-pg16")   // pin a version once it works
             .WithDatabase("iot").WithUsername("iot").WithPassword("iot_test")
             .WithResourceMapping(
                 File.ReadAllBytes(Path.Combine(AppContext.BaseDirectory, "init.sql")),
