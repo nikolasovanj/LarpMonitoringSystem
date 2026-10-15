@@ -1,0 +1,15 @@
+FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+WORKDIR /src
+COPY src/IotMonitor.Contracts/*.csproj src/IotMonitor.Contracts/
+COPY src/IotMonitor.Core/*.csproj src/IotMonitor.Core/
+COPY src/IotMonitor.Api/*.csproj src/IotMonitor.Api/
+RUN dotnet restore src/IotMonitor.Api
+COPY src ./src
+RUN dotnet publish src/IotMonitor.Api -c Release -o /out --no-restore
+
+FROM mcr.microsoft.com/dotnet/aspnet:8.0
+WORKDIR /app
+COPY --from=build /out .
+USER $APP_UID
+EXPOSE 8080
+ENTRYPOINT ["dotnet", "IotMonitor.Api.dll"]
