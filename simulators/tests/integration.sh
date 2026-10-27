@@ -212,7 +212,7 @@ test_cmd_accept() {
   start_sim $dev SENSORS=temperature,pressure
   wait_status $dev online 10 || bad "device did not come online"
   reply=$(send_cmd $dev '{"sensor":"pressure","fault":"ramp","duration":15}')
-  check "reply is {\"success\":true}" jqt "$reply"  '.success==true'
+  check "reply is {\"ok\":true}" jqt "$reply"  '.ok==true'
   check "pressure enters the ramp fault" wait_log "$log" "$dev/pressure: fault none -> ramp" 5
   check "the fault ends after its duration" wait_log "$log" "$dev/pressure: fault ramp -> none" 10
   check "temperature was not affected" not grep -qF "$dev/temperature: fault" "$log"
@@ -234,7 +234,7 @@ test_cmd_reject() {
     json=${c%%|*}; frag=${c#*|}
     reply=$(send_cmd $dev "$json")
     check "rejected with a reason: $json" \
-      jqt "$reply"  --arg f "$frag" '.success==false and (.error|contains($f))'
+      jqt "$reply"  --arg f "$frag" '.ok==false and (.error|contains($f))'
   done
   check "no rejected command injected a fault" not grep -qF 'fault none ->' "$log"
 }
@@ -264,7 +264,7 @@ test_broker_restart() {
   check "reconnected (>= 2 CONNACKs in the log)" \
     [ "$(grep -c '^connect: Connection Accepted' "$log")" -ge 2 ]
   reply=$(send_cmd $dev '{"sensor":"pressure","fault":"spike"}')
-  check "cmd subscription was restored" jqt "$reply" '.success==true'
+  check "cmd subscription was restored" jqt "$reply" '.ok==true'
 }
 
 test_image_sigterm() {

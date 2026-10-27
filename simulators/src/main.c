@@ -80,7 +80,7 @@ static void on_message(struct mosquitto *m, void *ud, const struct mosquitto_mes
 
     /* cJSON escapes the strings for us, so odd input can't break the reply. */
     cJSON *reply = cJSON_CreateObject();
-    cJSON_AddBoolToObject(reply, "success", rc == 0);
+    cJSON_AddBoolToObject(reply, "ok", rc == 0);
     if (rc) cJSON_AddStringToObject(reply, "error", err);
     char *text = cJSON_PrintUnformatted(reply);
     if (text) {
