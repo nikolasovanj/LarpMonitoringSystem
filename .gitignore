@@ -2,3 +2,4 @@ simulators/build
 .vscode
 **/bin
 **/obj
+.env

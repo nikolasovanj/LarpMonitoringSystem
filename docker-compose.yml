@@ -100,6 +100,7 @@ services:
         condition: service_healthy
       timescaledb:
         condition: service_healthy
+        
 volumes:
   mosquitto-data:
   tsdb-data:
