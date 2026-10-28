@@ -12,7 +12,7 @@ services:
       retries: 5
       start_period: 3s
     restart: unless-stopped
-  
+
   monitor:
     image: eclipse-mosquitto:2
     entrypoint: ["mosquitto_sub", "-h", "mosquitto", "-t", "factory/#", "-v"]
@@ -26,7 +26,7 @@ services:
     build: ./simulators
     environment:
       DEVICE_ID: pump01
-      BROKER_HOST: mosquitto      
+      BROKER_HOST: mosquitto
       PUBLISH_INTERVAL_MS: 1000
       SENSORS: temperature,pressure,flow
     depends_on: [mosquitto]
@@ -37,7 +37,7 @@ services:
       DEVICE_ID: motor02
       LINE: line2
       BROKER_HOST: mosquitto
-      PUBLISH_INTERVAL_MS: 
+      PUBLISH_INTERVAL_MS: 1000
       SENSORS: temperature,vibration,current
     depends_on: [mosquitto]
 
@@ -57,7 +57,7 @@ services:
       timeout: 5s
       retries: 10
     restart: unless-stopped
-  
+
   ingestion:
     build: ./backend
     restart: unless-stopped
@@ -100,7 +100,13 @@ services:
         condition: service_healthy
       timescaledb:
         condition: service_healthy
-        
+
+  web:
+    build: ./web
+    ports: ["5173:80"]
+    depends_on:
+      - api
+    restart: unless-stopped
+
 volumes:
-  mosquitto-data:
   tsdb-data:

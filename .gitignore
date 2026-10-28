@@ -3,3 +3,4 @@ simulators/build
 **/bin
 **/obj
 .env
+package-lock.json
