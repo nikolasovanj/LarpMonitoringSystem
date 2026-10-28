@@ -24,5 +24,5 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 8.0.x
-      - run: dotnet build desktop/IotMonitor.Operator -c Release -warnaserror:CS8600,CS8602,CS8603,CS8604
-      - run: dotnet test desktop/IotMonitor.Operator.Tests -c Release
+      - run: dotnet build desktop/Monitor.Operator -c Release -warnaserror:CS8600,CS8602,CS8603,CS8604
+      - run: dotnet test desktop/Monitor.Operator.Tests -c Release
