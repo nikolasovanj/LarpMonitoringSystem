@@ -12,7 +12,7 @@ services:
       retries: 5
       start_period: 3s
     restart: unless-stopped
-  
+
   monitor:
     image: eclipse-mosquitto:2
     entrypoint: ["mosquitto_sub", "-h", "mosquitto", "-t", "factory/#", "-v"]
@@ -26,9 +26,9 @@ services:
     build: ./simulators
     environment:
       DEVICE_ID: pump01
-      BROKER_HOST: mosquitto      
+      BROKER_HOST: mosquitto
       PUBLISH_INTERVAL_MS: 1000
-      SENSORS: temperature,pressure
+      SENSORS: temperature,pressure,flow
     depends_on: [mosquitto]
 
   sim-motor02:
@@ -37,6 +37,89 @@ services:
       DEVICE_ID: motor02
       LINE: line2
       BROKER_HOST: mosquitto
-      PUBLISH_INTERVAL_MS: 
-      SENSORS: temperature,vibration
+      PUBLISH_INTERVAL_MS: 1000
+      SENSORS: temperature,vibration,current
     depends_on: [mosquitto]
+
+  timescaledb:
+    image: timescale/timescaledb:latest-pg16
+    environment:
+      POSTGRES_USER: iot
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-iot_dev_password}
+      POSTGRES_DB: iot
+    ports: ["5432:5432"]
+    volumes:
+      - tsdb-data:/var/lib/postgresql/data
+      - ./infrastructure/timescaledb/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U iot -d iot"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  ingestion:
+    build: ./backend
+    restart: unless-stopped
+    stop_grace_period: 30s
+    environment:
+      Mqtt__Host: mosquitto
+      ConnectionStrings__Timescale: "Host=timescaledb;Port=5432;Database=iot;Username=iot;Password=${DB_PASSWORD:-iot_dev_password}"
+    depends_on:
+      mosquitto:
+        condition: service_healthy
+      timescaledb:
+        condition: service_healthy
+
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.api
+    restart: unless-stopped
+    ports: ["8080:8080"]
+    environment:
+      Mqtt__Host: mosquitto
+      ConnectionStrings__Timescale: "Host=timescaledb;Port=5432;Database=iot;Username=iot;Password=${DB_PASSWORD:-iot_dev_password}"
+      Cors__Origins__0: "http://localhost:5173"
+    depends_on:
+      mosquitto:
+        condition: service_healthy
+      timescaledb:
+        condition: service_healthy
+
+  alerting:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.alerting
+    restart: unless-stopped
+    environment:
+      Mqtt__Host: mosquitto
+      ConnectionStrings__Timescale: "Host=timescaledb;Port=5432;Database=iot;Username=iot;Password=${DB_PASSWORD:-iot_dev_password}"
+    depends_on:
+      mosquitto:
+        condition: service_healthy
+      timescaledb:
+        condition: service_healthy
+
+  web:
+    build: ./web
+    ports: ["5173:80"]
+    depends_on:
+      - api
+    restart: unless-stopped
+
+  #only on linux
+  operator:
+    build: ./desktop
+    profiles: ["desktop"]
+    environment:
+      MONITOR_API: http://api:8080
+      DISPLAY: ${DISPLAY:-:0}
+    volumes:
+      - /tmp/.X11-unix:/tmp/.X11-unix
+    depends_on:
+      - api
+    restart: "no"
+
+volumes:
+  tsdb-data:

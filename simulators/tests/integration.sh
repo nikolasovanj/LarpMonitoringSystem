@@ -154,7 +154,8 @@ test_telemetry() {
     check "$s: valid JSON, right device/sensor, number value, fresh ts" \
       jqt "$msg" --arg d $dev --arg s $s \
          '.device==$d and .sensor==$s and (.value|type=="number")
-          and (.unit|type=="string") and (((.ts - now)|fabs) < 30)'
+          and (.unit|type=="string") 
+          and .ts > 100000000000 and (((.ts/1000 - now)|fabs) < 30)'
   done
 }
 
@@ -286,10 +287,21 @@ test_image_sigterm() {
   check "status flips to offline" wait_status $dev offline 5
 }
 
+test_timestamps() {
+  local dev=t12-ts f="$TMP/t12.cap" total uniq
+  start_sim $dev SENSORS=temperature        # 200 ms interval
+  wait_status $dev online 10 || bad "device did not come online"
+  capture 3 "$(T $dev temperature/telemetry)" "$f"
+  total=$(wc -l <"$f")
+  uniq=$(cut -d' ' -f2- "$f" | jq -r .ts | sort -u | wc -l)
+  check "got a useful number of samples ($total in 3 s)" [ "$total" -ge 10 ]
+  eq "every sample has its own timestamp" "$uniq" "$total"
+}
+
 # ---------------------------------------------------------------- main
 
 ALL=(status telemetry subset two_devices clean_stop last_will
-     cmd_accept cmd_reject retained_cmd broker_restart image_sigterm)
+     cmd_accept cmd_reject retained_cmd broker_restart image_sigterm timestamps)
 SELECTED=("$@"); [ ${#SELECTED[@]} -eq 0 ] && SELECTED=("${ALL[@]}")
 
 echo "broker: eclipse-mosquitto:2 on 127.0.0.1:$PORT    sim: $SIM"

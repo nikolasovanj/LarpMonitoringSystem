@@ -1,0 +1,27 @@
+name: Backend-CI
+
+on:
+  push:
+    branches: [main, staging]
+    paths: ["backend/**", "infrastructure/timescaledb/**", ".github/workflows/backend_ci.yml"]
+  pull_request:
+    paths: ["backend/**", "infrastructure/timescaledb/**", ".github/workflows/backend_ci.yml"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: backend-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - run: dotnet build backend/Monitor.sln -c Release -warnaserror
+      - run: dotnet test backend/Monitor.sln -c Release --no-build --logger "console;verbosity=normal"

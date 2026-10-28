@@ -1,2 +1,6 @@
 simulators/build
 .vscode
+**/bin
+**/obj
+.env
+package-lock.json

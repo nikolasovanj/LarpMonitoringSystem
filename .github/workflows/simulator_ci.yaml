@@ -1,16 +1,16 @@
-name: CI
+name: Simulator-CI
 
 on:
   push:
-    branches: [main]
-    paths: ["simulators/**", "docker-compose.yml", "infrastructure/**", ".github/workflows/ci.yml"]
+    branches: [main, staging]
+    paths: ["simulators/**", "docker-compose.yml", "infrastructure/**", ".github/workflows/simulator_ci.yml"]
   pull_request:
-    paths: ["simulators/**", "docker-compose.yml", "infrastructure/**", ".github/workflows/ci.yml"]
+    paths: ["simulators/**", "docker-compose.yml", "infrastructure/**", ".github/workflows/simulator_ci.yml"]
 
 permissions:
   contents: read
 
-concurrency:                       # a new push cancels the older run of the same branch
+concurrency:                       
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 

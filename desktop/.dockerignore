@@ -1,0 +1,4 @@
+**/bin
+**/obj
+**/.vs
+Monitor.Operator.Tests

@@ -180,9 +180,11 @@ int main(void) {
             if (!s.valid || !atomic_load(&connected)) continue;   /* dropout or offline */
 
             char payload[256];
+            struct timespec now; clock_gettime(CLOCK_REALTIME, &now);
+            long long ts_ms = (long long)now.tv_sec * 1000 + now.tv_nsec / 1000000;
             int n = snprintf(payload, sizeof payload,
-                "{\"device\":\"%s\",\"sensor\":\"%s\",\"value\":%.3f,\"unit\":\"%s\",\"ts\":%ld}",
-                cfg.device_id, profiles[i]->name, s.value, profiles[i]->unit, (long)time(NULL));
+                "{\"device\":\"%s\",\"sensor\":\"%s\",\"value\":%.3f,\"unit\":\"%s\",\"ts\":%lld}",
+                cfg.device_id, profiles[i]->name, s.value, profiles[i]->unit, ts_ms);
 
             if (n < 0 || (size_t)n >= sizeof payload) { fprintf(stderr, "payload truncated\n"); continue; }
 

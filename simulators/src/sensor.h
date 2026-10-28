@@ -36,6 +36,9 @@ typedef struct {
 extern const sensor_profile_t SENSOR_TEMPERATURE;
 extern const sensor_profile_t SENSOR_VIBRATION;
 extern const sensor_profile_t SENSOR_PRESSURE;
+extern const sensor_profile_t SENSOR_FLOW;
+extern const sensor_profile_t SENSOR_CURRENT;
+extern const sensor_profile_t SENSOR_ULTRASONIC;
 
 typedef struct {
     double value;
