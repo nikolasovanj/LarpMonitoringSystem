@@ -1,0 +1,72 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+  <Style Selector="TextBlock.muted">
+    <Setter Property="Opacity" Value="0.6" />
+  </Style>
+  <Style Selector="TextBlock.h">
+    <Setter Property="FontSize" Value="13" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="Opacity" Value="0.75" />
+    <Setter Property="Margin" Value="0,0,0,6" />
+  </Style>
+
+  <Style Selector="Border.card">
+    <Setter Property="Background" Value="#1c2128" />
+    <Setter Property="BorderBrush" Value="#30363d" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="8" />
+    <Setter Property="Padding" Value="12" />
+  </Style>
+
+  <!-- status dot -->
+  <Style Selector="Ellipse.dot">
+    <Setter Property="Width" Value="10" />
+    <Setter Property="Height" Value="10" />
+    <Setter Property="Fill" Value="#6e7681" />
+  </Style>
+  <Style Selector="Ellipse.dot.online">
+    <Setter Property="Fill" Value="#3fb950" />
+  </Style>
+
+  <!-- connection pill -->
+  <Style Selector="Border.pill">
+    <Setter Property="CornerRadius" Value="10" />
+    <Setter Property="Padding" Value="10,2" />
+    <Setter Property="Background" Value="#3b2f12" />
+  </Style>
+  <Style Selector="Border.pill.live">
+    <Setter Property="Background" Value="#12351d" />
+  </Style>
+
+  <!-- alert rows -->
+  <Style Selector="Border.alert">
+    <Setter Property="BorderThickness" Value="3,0,0,0" />
+    <Setter Property="BorderBrush" Value="#58a6ff" />
+    <Setter Property="Background" Value="#161b22" />
+    <Setter Property="Padding" Value="10,8" />
+    <Setter Property="Margin" Value="0,0,0,6" />
+    <Setter Property="CornerRadius" Value="4" />
+  </Style>
+  <Style Selector="Border.alert.warning">
+    <Setter Property="BorderBrush" Value="#d29922" />
+  </Style>
+  <Style Selector="Border.alert.critical">
+    <Setter Property="BorderBrush" Value="#f85149" />
+  </Style>
+  <Style Selector="Border.alert.acked">
+    <Setter Property="Opacity" Value="0.55" />
+  </Style>
+
+  <Style Selector="Border.error">
+    <Setter Property="Background" Value="#4c1d1d" />
+    <Setter Property="Padding" Value="12,6" />
+  </Style>
+  <Style Selector="TextBlock.bad">
+    <Setter Property="Foreground" Value="#ff7b72" />
+  </Style>
+  <Style Selector="TextBlock.good">
+    <Setter Property="Foreground" Value="#7ee787" />
+  </Style>
+
+</Styles>
