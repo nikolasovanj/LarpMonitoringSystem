@@ -8,7 +8,7 @@ public enum LiveState { Connecting, Live, Reconnecting, Offline }
 /// SignalR connection to /hubs/live. Events fire on whatever thread SignalR uses; the view models
 /// marshal to the UI thread.
 /// </summary>
-public sealed class LiveClient : IAsyncDisposable
+public sealed class LiveClient : ILiveClient
 {
     private readonly HubConnection _conn;
 

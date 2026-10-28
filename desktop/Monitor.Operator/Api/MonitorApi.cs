@@ -9,7 +9,7 @@ public sealed class ApiException(int status, string message) : Exception(message
 }
 
 /// <summary>REST client for the monitor API.</summary>
-public sealed class MonitorApi : IDisposable
+public sealed class MonitorApi : IMonitorApi
 {
     private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web)
     {

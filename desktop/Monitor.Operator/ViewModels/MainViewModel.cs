@@ -12,8 +12,10 @@ public sealed partial class MainViewModel : ObservableObject
     private const int HistoryPoints = 300;
     private const int LogLimit = 200;
 
-    private readonly MonitorApi _api;
-    private readonly LiveClient _live;
+    private readonly IMonitorApi _api;
+    private readonly ILiveClient _live;
+    private readonly Action<Action> _post;
+    private readonly TimeProvider _time;
     private readonly CancellationTokenSource _cts = new();
     private readonly Dictionary<string, DeviceViewModel> _byKey = new();
     private CancellationTokenSource? _historyCts;
@@ -21,10 +23,15 @@ public sealed partial class MainViewModel : ObservableObject
     private DateTimeOffset _lastRefresh = DateTimeOffset.MinValue;
     private string? _awaitingReplyFrom;
 
-    public MainViewModel(MonitorApi api, LiveClient live, string baseUrl)
+    /// <param name="post">Runs an action on the UI thread. Tests pass <c>a => a()</c>.</param>
+    /// <param name="time">Clock for the refresh throttle and the history window. Tests pass their own.</param>
+    public MainViewModel(IMonitorApi api, ILiveClient live, string baseUrl, Action<Action>? post = null,
+        TimeProvider? time = null)
     {
+        _time = time ?? TimeProvider.System;
         _api = api;
         _live = live;
+        _post = post ?? (a => Dispatcher.UIThread.Post(a));
         BaseUrl = baseUrl;
         Alerts.CollectionChanged += (_, _) => OnPropertyChanged(nameof(NoAlerts));
     }
@@ -62,7 +69,7 @@ public sealed partial class MainViewModel : ObservableObject
     partial void OnFaultSensorChanged(SensorViewModel? value)
     {
         if (value is null && SelectedDevice is { Sensors.Count: > 0 } d)
-            Dispatcher.UIThread.Post(() => FaultSensor ??= d.Sensors.FirstOrDefault());
+            _post(() => FaultSensor ??= d.Sensors.FirstOrDefault());
     }
 
     [ObservableProperty] private string _faultName = "spike";
@@ -94,12 +101,12 @@ public sealed partial class MainViewModel : ObservableObject
 
     public async Task StartAsync()
     {
-        _live.Telemetry += batch => Dispatcher.UIThread.Post(() => OnTelemetry(batch));
-        _live.DeviceStatus += s => Dispatcher.UIThread.Post(() => OnStatus(s));
-        _live.CommandResult += r => Dispatcher.UIThread.Post(() => OnCommandResult(r));
-        _live.Alert += a => Dispatcher.UIThread.Post(() => OnAlert(a));
-        _live.StateChanged += st => Dispatcher.UIThread.Post(() => Connection = st.ToString());
-        _live.Connected += () => Dispatcher.UIThread.Post(async () =>
+        _live.Telemetry += batch => _post(() => OnTelemetry(batch));
+        _live.DeviceStatus += s => _post(() => OnStatus(s));
+        _live.CommandResult += r => _post(() => OnCommandResult(r));
+        _live.Alert += a => _post(() => OnAlert(a));
+        _live.StateChanged += st => _post(() => Connection = st.ToString());
+        _live.Connected += () => _post(async () =>
         {
             // The first connect was already preceded by a refresh; later ones follow a gap in the data.
             if (_connectedBefore) await RefreshAsync();
@@ -123,7 +130,7 @@ public sealed partial class MainViewModel : ObservableObject
     [RelayCommand]
     private async Task RefreshAsync()
     {
-        _lastRefresh = DateTimeOffset.UtcNow;
+        _lastRefresh = _time.GetUtcNow();
         try
         {
             var devices = await _api.GetDevicesAsync(_cts.Token);
@@ -197,7 +204,7 @@ public sealed partial class MainViewModel : ObservableObject
         if (device is null) return;
         var cts = _historyCts = CancellationTokenSource.CreateLinkedTokenSource(_cts.Token);
 
-        var to = DateTimeOffset.UtcNow;
+        var to = _time.GetUtcNow();
         var from = to - HistoryWindow;
         foreach (var sensor in device.Sensors.ToList())
         {
@@ -235,7 +242,7 @@ public sealed partial class MainViewModel : ObservableObject
         }
 
         // A device or sensor we have not seen yet: fetch the snapshot, at most every 5 s.
-        if (unknown && DateTimeOffset.UtcNow - _lastRefresh > TimeSpan.FromSeconds(5))
+        if (unknown && _time.GetUtcNow() - _lastRefresh > TimeSpan.FromSeconds(5))
             _ = RefreshAsync();
     }
 
@@ -243,7 +250,7 @@ public sealed partial class MainViewModel : ObservableObject
     {
         if (_byKey.TryGetValue(Keys.Device(s.Site, s.Line, s.Device), out var device))
             device.Status = s.Status;
-        else if (DateTimeOffset.UtcNow - _lastRefresh > TimeSpan.FromSeconds(5))
+        else if (_time.GetUtcNow() - _lastRefresh > TimeSpan.FromSeconds(5))
             _ = RefreshAsync();
 
         AddLog($"{s.Device} is {s.Status}");

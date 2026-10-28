@@ -1,0 +1,28 @@
+name: Desktop-CI
+
+on:
+  push:
+    branches: [main, staging]
+    paths: ["desktop/**", ".github/workflows/desktop_ci.yml"]
+  pull_request:
+    paths: ["desktop/**", ".github/workflows/desktop_ci.yml"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: desktop-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build operator console
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - run: dotnet build desktop/IotMonitor.Operator -c Release -warnaserror:CS8600,CS8602,CS8603,CS8604
+      - run: dotnet test desktop/IotMonitor.Operator.Tests -c Release
