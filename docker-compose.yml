@@ -108,5 +108,18 @@ services:
       - api
     restart: unless-stopped
 
+  #only on linux
+  operator:
+    build: ./desktop
+    profiles: ["desktop"]
+    environment:
+      MONITOR_API: http://api:8080
+      DISPLAY: ${DISPLAY:-:0}
+    volumes:
+      - /tmp/.X11-unix:/tmp/.X11-unix
+    depends_on:
+      - api
+    restart: "no"
+
 volumes:
   tsdb-data:

@@ -1,0 +1,170 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:c="using:Monitor.Operator.Controls"
+        x:Class="Monitor.Operator.Views.MainWindow"
+        Title="Monitor: Operator Console"
+        Width="1400" Height="860" MinWidth="1000" MinHeight="600">
+
+  <DockPanel>
+
+    <!-- top bar -->
+    <Border DockPanel.Dock="Top" Padding="14,10" Background="#161b22" BorderBrush="#30363d" BorderThickness="0,0,0,1">
+      <DockPanel>
+        <Button DockPanel.Dock="Right" Content="Refresh" Command="{Binding RefreshCommand}" />
+        <Border DockPanel.Dock="Right" Classes="pill" Classes.live="{Binding IsLive}" Margin="0,0,12,0" VerticalAlignment="Center">
+          <TextBlock Text="{Binding Connection}" FontSize="12" />
+        </Border>
+        <StackPanel Orientation="Horizontal" Spacing="12">
+          <TextBlock Text="IoT Monitor" FontSize="18" FontWeight="SemiBold" VerticalAlignment="Center" />
+          <TextBlock Text="{Binding BaseUrl}" Classes="muted" VerticalAlignment="Center" />
+        </StackPanel>
+      </DockPanel>
+    </Border>
+
+    <Border DockPanel.Dock="Top" Classes="error" IsVisible="{Binding ErrorText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+      <TextBlock Text="{Binding ErrorText}" TextWrapping="Wrap" />
+    </Border>
+
+    <!-- event log -->
+    <Border DockPanel.Dock="Bottom" Height="150" Padding="14,8" Background="#0d1117" BorderBrush="#30363d" BorderThickness="0,1,0,0">
+      <DockPanel>
+        <TextBlock DockPanel.Dock="Top" Text="Events" Classes="h" />
+        <ListBox ItemsSource="{Binding Log}" Background="Transparent">
+          <ListBox.ItemTemplate>
+            <DataTemplate>
+              <TextBlock Text="{Binding}" FontFamily="Cascadia Mono,Consolas,Menlo,monospace" FontSize="12" />
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+      </DockPanel>
+    </Border>
+
+    <!-- devices -->
+    <Border DockPanel.Dock="Left" Width="260" Padding="10" BorderBrush="#30363d" BorderThickness="0,0,1,0">
+      <DockPanel>
+        <TextBlock DockPanel.Dock="Top" Text="Devices" Classes="h" />
+        <ListBox ItemsSource="{Binding Devices}" SelectedItem="{Binding SelectedDevice}" Background="Transparent">
+          <ListBox.ItemTemplate>
+            <DataTemplate>
+              <StackPanel Orientation="Horizontal" Spacing="10">
+                <Ellipse Classes="dot" Classes.online="{Binding IsOnline}" VerticalAlignment="Center" />
+                <StackPanel>
+                  <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
+                  <TextBlock Text="{Binding Subtitle}" Classes="muted" FontSize="12" />
+                </StackPanel>
+              </StackPanel>
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+      </DockPanel>
+    </Border>
+
+    <!-- alerts -->
+    <Border DockPanel.Dock="Right" Width="340" Padding="10" BorderBrush="#30363d" BorderThickness="1,0,0,0">
+      <DockPanel>
+        <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="8">
+          <TextBlock Text="Open alerts" Classes="h" />
+          <TextBlock Text="{Binding OpenAlertCount}" Classes="muted" />
+        </StackPanel>
+        <TextBlock DockPanel.Dock="Top" Text="Nothing open." Classes="muted" Margin="0,4"
+                   IsVisible="{Binding NoAlerts}" />
+        <ScrollViewer>
+          <ItemsControl ItemsSource="{Binding Alerts}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate>
+                <Border Classes="alert" Classes.warning="{Binding IsWarning}" Classes.critical="{Binding IsCritical}"
+                        Classes.acked="{Binding IsAcknowledged}">
+                  <StackPanel Spacing="4">
+                    <DockPanel>
+                      <TextBlock DockPanel.Dock="Right" Text="{Binding OpenedText}" Classes="muted" FontSize="12" />
+                      <TextBlock Text="{Binding Severity}" FontWeight="SemiBold" FontSize="12" />
+                    </DockPanel>
+                    <TextBlock Text="{Binding Message}" TextWrapping="Wrap" />
+                    <TextBlock Text="{Binding Source}" Classes="muted" FontSize="12" />
+                    <DockPanel>
+                      <Button DockPanel.Dock="Right" Content="Acknowledge" Command="{Binding AckCommand}" FontSize="12" />
+                      <TextBlock IsVisible="{Binding IsAcknowledged}" Text="{Binding AcknowledgedBy, StringFormat='Acknowledged by {0}'}"
+                                 Classes="muted" FontSize="12" VerticalAlignment="Center" />
+                    </DockPanel>
+                  </StackPanel>
+                </Border>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </ScrollViewer>
+      </DockPanel>
+    </Border>
+
+    <!-- selected device -->
+    <ScrollViewer>
+      <StackPanel Margin="16" Spacing="14">
+
+        <StackPanel Orientation="Horizontal" Spacing="10" IsVisible="{Binding SelectedDevice, Converter={x:Static ObjectConverters.IsNotNull}}">
+          <Ellipse Classes="dot" Classes.online="{Binding SelectedDevice.IsOnline}" VerticalAlignment="Center" />
+          <TextBlock Text="{Binding SelectedDevice.Name}" FontSize="22" FontWeight="SemiBold" />
+          <TextBlock Text="{Binding SelectedDevice.Subtitle}" Classes="muted" VerticalAlignment="Center" />
+          <TextBlock Text="{Binding SelectedDevice.StatusText}" Classes="muted" VerticalAlignment="Center" />
+        </StackPanel>
+
+        <TextBlock Text="Select a device on the left." Classes="muted"
+                   IsVisible="{Binding SelectedDevice, Converter={x:Static ObjectConverters.IsNull}}" />
+
+        <ItemsControl ItemsSource="{Binding SelectedDevice.Sensors}">
+          <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate>
+              <UniformGrid Columns="2" />
+            </ItemsPanelTemplate>
+          </ItemsControl.ItemsPanel>
+          <ItemsControl.ItemTemplate>
+            <DataTemplate>
+              <Border Classes="card" Margin="0,0,10,10">
+                <StackPanel Spacing="6">
+                  <DockPanel>
+                    <TextBlock DockPanel.Dock="Right" Text="{Binding Unit}" Classes="muted" VerticalAlignment="Bottom" />
+                    <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
+                  </DockPanel>
+                  <TextBlock Text="{Binding LatestText}" FontSize="30" FontWeight="SemiBold" />
+                  <c:LineChart Values="{Binding Values}" Height="150" />
+                </StackPanel>
+              </Border>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+
+        <!-- fault injection -->
+        <Border Classes="card" IsVisible="{Binding SelectedDevice, Converter={x:Static ObjectConverters.IsNotNull}}">
+          <StackPanel Spacing="10">
+            <TextBlock Text="Inject a fault" Classes="h" />
+            <StackPanel Orientation="Horizontal" Spacing="12">
+              <StackPanel Spacing="4">
+                <TextBlock Text="Sensor" Classes="muted" FontSize="12" />
+                <ComboBox Width="180" ItemsSource="{Binding SelectedDevice.Sensors}" SelectedItem="{Binding FaultSensor}">
+                  <ComboBox.ItemTemplate>
+                    <DataTemplate>
+                      <TextBlock Text="{Binding Name}" />
+                    </DataTemplate>
+                  </ComboBox.ItemTemplate>
+                </ComboBox>
+              </StackPanel>
+              <StackPanel Spacing="4">
+                <TextBlock Text="Fault" Classes="muted" FontSize="12" />
+                <ComboBox Width="150" ItemsSource="{Binding FaultNames}" SelectedItem="{Binding FaultName}" />
+              </StackPanel>
+              <StackPanel Spacing="4">
+                <TextBlock Text="Duration (samples)" Classes="muted" FontSize="12" />
+                <TextBox Width="150" Watermark="default" Text="{Binding FaultDuration}" />
+              </StackPanel>
+              <Button Content="Inject" Command="{Binding InjectFaultCommand}" VerticalAlignment="Bottom" />
+            </StackPanel>
+            <TextBlock Text="Whole number from 1 to 1,000,000, or leave empty." Classes="bad" FontSize="12"
+                       IsVisible="{Binding DurationInvalid}" />
+            <TextBlock Text="{Binding FaultMessage}" Classes.bad="{Binding FaultIsError}" Classes.good="{Binding !FaultIsError}"
+                       IsVisible="{Binding FaultMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+          </StackPanel>
+        </Border>
+
+      </StackPanel>
+    </ScrollViewer>
+
+  </DockPanel>
+</Window>
