@@ -65,7 +65,7 @@ int config_load(config_t *cfg) {
     env_str("SITE",      "site1", cfg->site, sizeof cfg->site);
     env_str("LINE",      "line1", cfg->line, sizeof cfg->line);
     env_str("BROKER_HOST", "localhost", cfg->broker_host, sizeof cfg->broker_host);
-    env_str("SENSORS", "temperature", cfg->sensors, sizeof cfg->sensors);
+    env_str("SENSORS", "temperature,vibration,pressure", cfg->sensors, sizeof cfg->sensors);
 
     if (!valid_id("DEVICE_ID", cfg->device_id) ||
         !valid_id("SITE", cfg->site) ||
