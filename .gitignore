@@ -1,4 +1,5 @@
 simulators/build
+build
 .vscode
 **/bin
 **/obj
